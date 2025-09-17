@@ -234,11 +234,10 @@ onUnmounted(() => {
   border-radius: 16px;
   padding: 20px;
   height: fit-content;
-  position: sticky;
-  top: 80px;
+  width: 100%;
 
   // Hide scrollbar but keep functionality
-  max-height: calc(100vh - 120px);
+  max-height: 100%;
   overflow-y: auto;
   scrollbar-width: none; // Firefox
   -ms-overflow-style: none; // IE and Edge

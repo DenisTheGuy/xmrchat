@@ -31,14 +31,15 @@ useHead({});
 
   .desktop-sidebar {
     display: block;
-    position: fixed;
+    position: absolute;
     right: 20px;
-    top: 100px;
+    top: 80px;
     width: 280px;
   }
 
   .inner {
     margin-right: 320px;
+    position: relative;
   }
 }
 </style>

@@ -34,7 +34,7 @@ const { t } = useI18n();
   align-items: center;
   justify-content: center;
   margin-top: 2rem;
-  max-width: 1400px;
+  max-width: 1100px;
   margin-left: auto;
   margin-right: auto;
   padding: 0 2rem;
