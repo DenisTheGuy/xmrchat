@@ -4,20 +4,20 @@
       <h2 class="section-title">
         <span v-if="hasLiveStreams" class="live-indicator">
           <span class="pulse-dot"></span>
-          {{ $t('creatorsLive') || 'Creators Live' }}
+          {{ $t('liveNow') || 'Live Now' }}
         </span>
         <span v-else>
           {{ $t('featuredCreators') || 'Featured Creators' }}
         </span>
       </h2>
-      <UButton
-        v-if="streams.length > 4"
-        variant="ghost"
-        size="sm"
-        :to="'/creators'"
+      <NuxtLink
+        v-if="streams.length > 3"
+        to="/creator"
+        class="view-all-link"
       >
         {{ $t('viewAll') || 'View all' }}
-      </UButton>
+        <Icon name="heroicons:arrow-right" class="arrow-icon" />
+      </NuxtLink>
     </div>
 
     <div v-if="loading" class="loading-grid">
@@ -33,68 +33,39 @@
       <p class="text-gray-500">{{ $t('noCreatorsAvailable') || 'No creators available' }}</p>
     </div>
 
-    <div v-else class="streams-grid">
-      <NuxtLink
-        v-for="stream in displayedStreams"
-        :key="stream.id"
-        :to="`/${stream.path}`"
-        class="stream-card-mobile"
-      >
-        <div class="card-image-container">
-          <img
-            v-if="stream.logo"
-            :src="stream.logo"
-            :alt="stream.name"
-            class="card-image"
-            @error="handleImageError($event, stream)"
-          />
-          <div v-else class="image-fallback">
-            <Icon name="heroicons:user-circle" class="text-4xl" />
-          </div>
-          <span v-if="stream.isLive" class="live-badge-mobile">
-            <span class="live-dot"></span>
-            LIVE
-          </span>
-        </div>
-
-        <div class="card-content">
-          <div class="card-header">
-            <h3 class="card-title">{{ stream.name }}</h3>
-            <Icon
-              v-if="stream.platform === 'twitch'"
-              name="simple-icons:twitch"
-              class="platform-icon twitch"
+    <div v-else class="streams-container">
+      <div class="streams-scroll">
+        <NuxtLink
+          v-for="stream in displayedStreams"
+          :key="stream.id"
+          :to="`/${stream.path}`"
+          class="stream-card-mobile"
+        >
+          <div class="card-avatar">
+            <img
+              v-if="stream.logo"
+              :src="stream.logo"
+              :alt="stream.name"
+              class="avatar-image"
+              @error="handleImageError($event, stream)"
             />
-            <Icon
-              v-else-if="stream.platform === 'x'"
-              name="simple-icons:x"
-              class="platform-icon x"
-            />
-          </div>
-
-          <p v-if="stream.streamTitle" class="card-subtitle">
-            {{ truncateText(stream.streamTitle, 60) }}
-          </p>
-          <p v-else-if="stream.description" class="card-subtitle">
-            {{ truncateText(stream.description, 60) }}
-          </p>
-
-          <div v-if="stream.isLive && stream.viewerCount" class="card-viewers">
-            <Icon name="heroicons:eye" class="text-sm" />
-            <span>{{ formatViewerCount(stream.viewerCount) }} {{ $t('viewers') || 'viewers' }}</span>
-          </div>
-
-          <div v-if="stream.tags && stream.tags.length > 0" class="card-tags">
-            <span
-              v-for="(tag, index) in stream.tags.slice(0, 3)"
-              :key="index"
-              class="tag"
-            >
-              {{ tag }}
+            <div v-else class="avatar-fallback" :style="getAvatarColor(stream.name)">
+              <span class="avatar-initials">{{ getInitials(stream.name) }}</span>
+            </div>
+            <span v-if="stream.isLive" class="live-badge">
+              <span class="live-dot"></span>
+              LIVE
             </span>
           </div>
-        </div>
-      </NuxtLink>
+          <div class="card-content">
+            <h3 class="card-name">{{ stream.name }}</h3>
+            <div v-if="stream.isLive" class="card-viewers">
+              <Icon name="heroicons:users-solid" class="viewer-icon" />
+              <span>{{ formatViewerCount(stream.viewerCount || 0) }}</span>
+            </div>
+          </div>
+        </NuxtLink>
+      </div>
     </div>
   </section>
 </template>
@@ -126,9 +97,15 @@ const hasLiveStreams = computed(() =>
   streams.value.some(stream => stream.isLive)
 )
 
-const displayedStreams = computed(() =>
-  streams.value.slice(0, 8) // Show more on mobile grid
-)
+const displayedStreams = computed(() => {
+  const live = streams.value.filter(s => s.isLive)
+  const featured = streams.value.filter(s => !s.isLive)
+
+  if (live.length > 0) {
+    return [...live.slice(0, 5), ...featured.slice(0, 3 - Math.min(live.length, 5))]
+  }
+  return featured.slice(0, 5)
+})
 
 const fetchStreams = async () => {
   try {
@@ -156,8 +133,37 @@ const truncateText = (text: string, maxLength: number): string => {
 
 const handleImageError = (event: Event, stream: LiveStream) => {
   const img = event.target as HTMLImageElement
-  // Fallback to UI Avatars API
-  img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(stream.name)}&background=random`
+  img.style.display = 'none'
+}
+
+const getInitials = (name: string): string => {
+  const words = name.split(' ')
+  if (words.length >= 2) {
+    return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
+}
+
+const getAvatarColor = (name: string): Record<string, string> => {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+
+  const gradients = [
+    'linear-gradient(135deg, #FF8A4C 0%, #FF6B2B 100%)',
+    'linear-gradient(135deg, #FFB366 0%, #FF8A4C 100%)',
+    'linear-gradient(135deg, #FF6B2B 0%, #E55100 100%)',
+    'linear-gradient(135deg, #FFA860 0%, #FF8A4C 100%)',
+    'linear-gradient(135deg, #FF9558 0%, #FF7638 100%)',
+  ]
+
+  const colorIndex = Math.abs(hash) % gradients.length
+
+  return {
+    background: gradients[colorIndex],
+    color: 'white',
+  }
 }
 
 onMounted(() => {
@@ -175,16 +181,17 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .home-live-streams {
-  padding: 40px 0;
+  padding: 20px 0 10px;
 
   .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 15px;
+    padding: 0 20px;
 
     .section-title {
-      font-size: 24px;
+      font-size: 20px;
       font-weight: 700;
       color: var(--color-gray-900);
 
@@ -195,124 +202,140 @@ onUnmounted(() => {
       .live-indicator {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
 
         .pulse-dot {
-          width: 12px;
-          height: 12px;
-          background: #ef4444;
+          width: 8px;
+          height: 8px;
+          background: #FF6B2B;
           border-radius: 50%;
           animation: pulse 2s infinite;
         }
       }
     }
+
+    .view-all-link {
+      font-size: 13px;
+      font-weight: 500;
+      color: #FF6B2B;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .arrow-icon {
+        width: 14px;
+        height: 14px;
+      }
+    }
   }
 
   .loading-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+    display: flex;
+    gap: 12px;
+    padding: 0 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 
-    @media (max-width: 640px) {
-      grid-template-columns: 1fr;
+    &::-webkit-scrollbar {
+      display: none;
     }
 
     .skeleton-card {
+      min-width: 140px;
+
       .skeleton-image {
-        width: 100%;
-        height: 150px;
-        border-radius: 8px;
+        width: 140px;
+        height: 140px;
+        border-radius: 12px;
       }
     }
   }
 
   .empty-state {
     text-align: center;
-    padding: 60px 20px;
+    padding: 40px 20px;
   }
 
-  .streams-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+  .streams-container {
+    position: relative;
 
-    @media (max-width: 640px) {
-      grid-template-columns: 1fr;
-    }
+    .streams-scroll {
+      display: flex;
+      gap: 12px;
+      padding: 0 20px;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
 
-    @media (min-width: 768px) and (max-width: 1024px) {
-      grid-template-columns: repeat(2, 1fr);
+      &::-webkit-scrollbar {
+        display: none;
+      }
     }
   }
 
   .stream-card-mobile {
-    background: var(--color-gray-50);
-    border-radius: 12px;
-    overflow: hidden;
-    transition: all 0.2s;
-    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    min-width: 110px;
     text-decoration: none;
+    align-items: center;
+    transition: transform 0.2s ease;
 
-    .dark & {
-      background: var(--color-gray-800);
+    &:active {
+      transform: scale(0.98);
     }
 
-    &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-
-      .dark & {
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      }
-    }
-
-    .card-image-container {
+    .card-avatar {
       position: relative;
-      width: 100%;
-      height: 150px;
-      background: var(--color-gray-200);
+      width: 110px;
+      height: 110px;
+      margin-bottom: 8px;
 
-      .dark & {
-        background: var(--color-gray-700);
-      }
-
-      .card-image {
+      .avatar-image,
+      .avatar-fallback {
         width: 100%;
         height: 100%;
+        border-radius: 20px;
         object-fit: cover;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
 
-      .image-fallback {
-        width: 100%;
-        height: 100%;
+      .avatar-fallback {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--color-gray-400);
 
-        .dark & {
-          color: var(--color-gray-600);
+        .avatar-initials {
+          font-weight: 700;
+          font-size: 28px;
+          text-transform: uppercase;
+          color: white;
         }
       }
 
-      .live-badge-mobile {
+      .live-badge {
         position: absolute;
-        top: 12px;
-        right: 12px;
-        background: rgba(239, 68, 68, 0.9);
-        backdrop-filter: blur(4px);
+        bottom: -4px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #FF6B2B;
         color: white;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
-        padding: 4px 8px;
-        border-radius: 6px;
+        padding: 3px 10px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         gap: 4px;
+        box-shadow: 0 2px 6px rgba(255, 107, 43, 0.3);
+        border: 2px solid white;
 
         .live-dot {
-          width: 6px;
-          height: 6px;
+          width: 5px;
+          height: 5px;
           background: white;
           border-radius: 50%;
           animation: pulse 1.5s infinite;
@@ -321,85 +344,37 @@ onUnmounted(() => {
     }
 
     .card-content {
-      padding: 16px;
+      text-align: center;
+      width: 100%;
+      padding-top: 2px;
 
-      .card-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
-
-        .card-title {
-          font-size: 16px;
-          font-weight: 600;
-          color: var(--color-gray-900);
-          flex: 1;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-
-          .dark & {
-            color: var(--color-gray-100);
-          }
-        }
-
-        .platform-icon {
-          width: 16px;
-          height: 16px;
-          flex-shrink: 0;
-
-          &.twitch {
-            color: #9146ff;
-          }
-
-          &.x {
-            color: var(--color-gray-900);
-
-            .dark & {
-              color: var(--color-gray-100);
-            }
-          }
-        }
-      }
-
-      .card-subtitle {
-        font-size: 13px;
-        color: var(--color-gray-600);
-        line-height: 1.5;
-        margin-bottom: 8px;
-        min-height: 40px;
+      .card-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-gray-900);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: 0 4px;
+        margin-bottom: 2px;
 
         .dark & {
-          color: var(--color-gray-400);
+          color: var(--color-gray-100);
         }
       }
 
       .card-viewers {
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        color: var(--color-gray-500);
-        margin-bottom: 8px;
+        justify-content: center;
+        gap: 4px;
+        font-size: 11px;
+        color: #FF6B2B;
         font-weight: 500;
-      }
 
-      .card-tags {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-
-        .tag {
-          font-size: 11px;
-          padding: 3px 8px;
-          background: var(--color-gray-200);
-          color: var(--color-gray-700);
-          border-radius: 12px;
-
-          .dark & {
-            background: var(--color-gray-700);
-            color: var(--color-gray-300);
-          }
+        .viewer-icon {
+          width: 12px;
+          height: 12px;
         }
       }
     }
@@ -407,14 +382,11 @@ onUnmounted(() => {
 }
 
 @keyframes pulse {
-  0% {
+  0%, 100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 1;
+    opacity: 0.4;
   }
 }
 
@@ -422,6 +394,30 @@ onUnmounted(() => {
 @media (min-width: 1025px) {
   .home-live-streams {
     display: none;
+  }
+}
+
+// Responsive adjustments for tablets
+@media (min-width: 640px) and (max-width: 1024px) {
+  .home-live-streams {
+    .stream-card-mobile {
+      min-width: 130px;
+
+      .card-avatar {
+        width: 130px;
+        height: 130px;
+
+        .avatar-initials {
+          font-size: 32px;
+        }
+      }
+
+      .card-content {
+        .card-name {
+          font-size: 15px;
+        }
+      }
+    }
   }
 }
 </style>

@@ -71,24 +71,57 @@ const { t } = useI18n();
   @media only screen and (max-width: 840px) {
     flex-direction: column;
     align-items: stretch;
-    margin: 1rem auto;
+    margin: 1rem 0;
+    padding: 0;
 
     .image-side {
       flex: 1;
       display: flex;
-      padding: 0.75rem 0.25rem;
+      padding: 0 10px;
+      justify-content: center;
 
       img {
         max-width: 100%;
+        width: 100%;
       }
     }
 
     .content-side {
-      padding: 1rem;
-      text-align: center;
+      flex: 1;
+      padding: 1rem 10px;
+      min-width: unset;
+      text-align: left;
+
+      h1 {
+        text-align: left;
+        padding-left: 0;
+        margin-left: 0;
+      }
+
+      .description {
+        text-align: left;
+        padding-left: 0;
+      }
 
       .flex {
-        justify-content: center;
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 0.5rem;
+        flex-wrap: nowrap;
+        padding-left: 0;
+        margin-left: 0;
+
+        :deep(button) {
+          flex: 1;
+          min-width: 0;
+          text-align: center !important;
+          justify-content: center !important;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          padding: 0.75rem 0.5rem !important;
+          font-size: 0.875rem !important;
+        }
       }
     }
   }

@@ -134,7 +134,6 @@ export class LiveStreamsService {
         }
       }
 
-      // Cache the results
       await this.cacheManager.set(cacheKey, Array.from(streamsMap.entries()), 120000); // 2 minutes
 
       return streamsMap;
@@ -197,7 +196,6 @@ export class LiveStreamsService {
         }
       }
 
-      // Cache the results
       await this.cacheManager.set(cacheKey, Array.from(spacesMap.entries()), 900000); // 15 minutes
 
       return spacesMap;
