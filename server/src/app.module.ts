@@ -22,6 +22,7 @@ import { SwapsModule } from './swaps/swaps.module';
 import { TrocadorModule } from './integrations/trocador/trocador.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuditsModule } from './audits/audits.module';
+import { LiveStreamsModule } from './live-streams/live-streams.module';
 import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
@@ -160,6 +161,7 @@ import { PageRecipientsModule } from './page-recipients/page-recipients.module';
     SwapsModule,
     TrocadorModule,
     AuditsModule,
+    LiveStreamsModule,
     CommanderModule,
     AdminModule,
     TipMessageModule,

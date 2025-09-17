@@ -54,6 +54,12 @@ export class Page {
   @Column({ nullable: true })
   twitchChannel: string;
 
+  @Column({ nullable: true })
+  twitchUsername: string;
+
+  @Column({ nullable: true })
+  xUsername: string;
+
   @Column({ type: 'bigint', nullable: true })
   minTipAmount: number;
 

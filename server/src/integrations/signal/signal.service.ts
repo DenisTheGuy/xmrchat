@@ -36,7 +36,7 @@ export class SignalService implements OnModuleInit, IIntegrationVerifier {
       this.logger.log(`Signal account: ${account}`);
       this.account = account;
     } catch (error) {
-      this.logger.warn('Signal service init failed', error.response.data);
+      this.logger.warn('Signal service init failed', error.response?.data || error.message);
     }
   }
 

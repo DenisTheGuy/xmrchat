@@ -32,11 +32,11 @@ export const useStreamerIdSeoMeta = (
 
     ogTitle: t("head.XMRChatTip", { path: page.value?.path }),
     ogDescription: t("head.XMRChatTip", { path: page.value?.path }),
-    ogImage: `${imageBaseUrl}${page.value?.logo.url}`,
+    ogImage: page.value?.logo?.url ? `${imageBaseUrl}${page.value.logo.url}` : undefined,
 
     twitterTitle: t("head.XMRChatTip", { path: page.value?.path }),
     twitterDescription: null,
-    twitterImage: `${imageBaseUrl}${page.value?.logo.thumbnail}`,
+    twitterImage: page.value?.logo?.thumbnail ? `${imageBaseUrl}${page.value.logo.thumbnail}` : undefined,
     twitterCard: "summary",
   });
 };

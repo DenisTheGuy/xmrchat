@@ -52,13 +52,17 @@ const { status, refresh, error, data } = useLazyAsyncData("creators", () =>
         <template v-for="item in data?.pages">
           <NuxtLink
             class="streamer-link hover:bg-background-2/30 transition-colors"
-            :to="item?.path"
+            :to="`/${item.path}`"
           >
             <GeneralImage
+              v-if="item?.logo"
               variant="logo"
-              :url="item?.logo.thumbnail || item.logo.url"
+              :url="item.logo.thumbnail || item.logo.url"
               class="w-[90px] h-[90px]"
             />
+            <div v-else class="w-[90px] h-[90px] rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-2xl font-bold">
+              {{ (item.name || item.path).charAt(0).toUpperCase() }}
+            </div>
             <div class="pt-3 font-medium">{{ item.name || item.path }}</div>
             <div class="pt-1 text-sm text-pale">{{ item.path }}</div>
           </NuxtLink>

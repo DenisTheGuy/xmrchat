@@ -29,26 +29,67 @@ const { t } = useI18n();
 
 <style scoped lang="scss">
 .home-hero {
-  @apply flex flex-row items-center mt-8;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2rem;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 2rem;
 
   .image-side {
-    @apply flex-1 flex py-3 p-10;
+    flex: 1.5;
+    display: flex;
+    justify-content: flex-end;
+    padding-right: 2rem;
+
+    img {
+      max-width: 750px;
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
   }
 
   .content-side {
-    @apply flex-1  flex flex-col p-10;
+    flex: 0.8;
+    display: flex;
+    flex-direction: column;
+    padding-left: 2rem;
+    min-width: 380px;
+
     .description {
-      @apply text-lg pt-4 pb-6;
+      font-size: 1.125rem;
+      line-height: 1.75rem;
+      padding-top: 1rem;
+      padding-bottom: 1.5rem;
     }
   }
 
   @media only screen and (max-width: 840px) {
-    @apply flex-col items-stretch;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 1rem auto;
+
     .image-side {
-      @apply flex-1 flex py-3 p-1;
+      flex: 1;
+      display: flex;
+      padding: 0.75rem 0.25rem;
+
+      img {
+        max-width: 100%;
+      }
     }
+
     .content-side {
-      @apply p-1;
+      padding: 1rem;
+      text-align: center;
+
+      .flex {
+        justify-content: center;
+      }
     }
   }
 }

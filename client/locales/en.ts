@@ -386,6 +386,16 @@ export default {
   receiveNotifsViaSimplex: "Receive notifications via SimpleX",
   receiveNotifsViaSignal: "Receive notifications via Signal",
 
+  // LIVE CREATORS
+  featuredCreators: "Featured Creators",
+  noCreatorsAvailable: "No creators available",
+  creatorsLive: "Creators Live",
+  liveNow: "Live Now",
+  showMore: "Show more",
+  viewAll: "View all",
+  watching: "watching",
+  viewers: "viewers",
+
   // HEAD
   head: {
     description:
@@ -398,4 +408,5 @@ export default {
   emailVerification: "Email Verification",
   forgotPassword: "Forgot Password",
   signUp: "Sign up",
+  browseCreators: "Browse creators",
 };

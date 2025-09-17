@@ -17,6 +17,8 @@ async function bootstrap() {
   const adapter = new SocketIoAdaptor(app);
   app.useWebSocketAdapter(adapter);
 
-  await app.listen(3000);
+  const port = process.env.PORT || 3002;
+  await app.listen(port);
+  console.log(`Backend server is running on port ${port}`);
 }
 bootstrap();

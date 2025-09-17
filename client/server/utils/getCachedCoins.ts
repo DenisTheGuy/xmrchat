@@ -5,22 +5,42 @@ export const getCachedCoins = defineCachedFunction(
   async (event: H3Event) => {
     const config = useRuntimeConfig(event);
 
-    const res = await $fetch<{ coins: Coin[] }>(
-      `${
-        config.public.apiServerSideBaseUrl || config.public.apiBaseUrl
-      }/swaps/coins`
-    );
+    try {
+      const res = await $fetch<{ coins: Coin[] }>(
+        `${
+          config.public.apiServerSideBaseUrl || config.public.apiBaseUrl
+        }/swaps/coins`,
+        {
+          retry: 1, // Limit retries to avoid infinite loops
+          timeout: 5000, // 5 second timeout
+        }
+      );
 
-    const swapRes = await $fetch<{ minimum: number; maximum: number }>(
-      `${
-        config.public.apiServerSideBaseUrl || config.public.apiBaseUrl
-      }/swaps/min-swap`
-    );
+      const swapRes = await $fetch<{ minimum: number; maximum: number }>(
+        `${
+          config.public.apiServerSideBaseUrl || config.public.apiBaseUrl
+        }/swaps/min-swap`,
+        {
+          retry: 1, // Limit retries to avoid infinite loops
+          timeout: 5000, // 5 second timeout
+        }
+      );
 
-    return {
-      coins: res.coins,
-      swapMinMax: swapRes,
-    };
+      return {
+        coins: res.coins,
+        swapMinMax: swapRes,
+      };
+    } catch (error) {
+      console.error('Failed to fetch coins data:', error);
+      // Return default/fallback values to prevent crashes
+      return {
+        coins: [],
+        swapMinMax: {
+          minimum: 0,
+          maximum: 0,
+        }
+      };
+    }
   },
   {
     maxAge: 60 * 40, // 40 minutes

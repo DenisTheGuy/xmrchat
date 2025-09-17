@@ -54,8 +54,8 @@ useStreamerIdSeoMeta(data);
       <template v-if="data">
         <StreamerHeader
           class="pt-2"
-          :bannerUrl="data.coverImage.url"
-          :logoUrl="data?.logo.url"
+          :bannerUrl="data.coverImage?.url"
+          :logoUrl="data?.logo?.url"
           :name="data.name"
           :links="data.links"
         />
