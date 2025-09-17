@@ -130,13 +130,13 @@ const hasLiveStreams = computed(() =>
 )
 
 const displayedStreams = computed(() => {
-  // Show only live streams if any exist, otherwise show featured (max 3)
+  // Show only live streams if any exist, otherwise show featured (max 5)
   const live = streams.value.filter(s => s.isLive);
   if (live.length > 0) {
-    return live.slice(0, 3);
+    return live.slice(0, 5);
   }
   const featured = streams.value.filter(s => !s.isLive);
-  return featured.slice(0, 3);
+  return featured.slice(0, 5);
 })
 
 const fetchStreams = async () => {
