@@ -43,11 +43,17 @@ const handleImageError = (event: Event) => {
 // Fetch immediately when component is created
 fetchStreams();
 
-// Set up refresh interval
-const refreshInterval = setInterval(fetchStreams, 120000);
+// Set up refresh interval only on client side
+let refreshInterval: NodeJS.Timeout | null = null;
+
+onMounted(() => {
+  refreshInterval = setInterval(fetchStreams, 120000);
+});
 
 onUnmounted(() => {
-  clearInterval(refreshInterval);
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
 });
 </script>
 
