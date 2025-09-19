@@ -1,6 +1,7 @@
 import type { AxiosRequestConfig } from "axios";
 import type {
   ContentLink,
+  LiveStream,
   LoginResponse,
   MeResponse,
   Numberic,
@@ -184,6 +185,11 @@ export const useServices = () => {
     return data;
   };
 
+  const getLiveStreams = async () => {
+    const { data } = await axios.get<LiveStream[]>(`/live-streams`);
+    return data;
+  };
+
   return {
     me,
     login,
@@ -209,5 +215,6 @@ export const useServices = () => {
     getPageOBSSettings,
     getMyLinks,
     updateLinks,
+    getLiveStreams,
   };
 };

@@ -60,6 +60,9 @@ export class Page {
   @Column({ nullable: true })
   xUsername: string;
 
+  @Column({ nullable: true })
+  youtubeChannelId: string;
+
   @Column({ type: 'bigint', nullable: true })
   minTipAmount: number;
 

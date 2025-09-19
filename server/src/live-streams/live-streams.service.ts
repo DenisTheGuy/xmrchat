@@ -3,9 +3,51 @@ import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { firstValueFrom } from 'rxjs';
 import { PagesService } from '../pages/pages.service';
-import { LiveStreamDto, TwitchStream, XSpace } from './dto/live-stream.dto';
 import { Page } from '../pages/page.entity';
 import { ConfigService } from '@nestjs/config';
+
+// Interfaces for API responses
+interface TwitchStream {
+  user_id: string;
+  user_login: string;
+  user_name: string;
+  game_id: string;
+  game_name: string;
+  type: string;
+  title: string;
+  viewer_count: number;
+  started_at: string;
+  language: string;
+  thumbnail_url: string;
+  tag_ids: string[];
+}
+
+interface XSpace {
+  id: string;
+  state: string;
+  title?: string;
+  host_ids?: string[];
+  speaker_ids?: string[];
+  participant_count?: number;
+  started_at?: string;
+  scheduled_start?: string;
+}
+
+interface YouTubeStream {
+  id: string;
+  channelId: string;
+  channelTitle: string;
+  title: string;
+  description?: string;
+  thumbnails?: {
+    default?: { url: string };
+    medium?: { url: string };
+    high?: { url: string };
+  };
+  liveBroadcastContent?: string;
+  actualStartTime?: string;
+  concurrentViewers?: string;
+}
 
 @Injectable()
 export class LiveStreamsService {
@@ -20,7 +62,7 @@ export class LiveStreamsService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  async getLiveStreams(): Promise<LiveStreamDto[]> {
+  async getLiveStreams() {
     try {
       // Get all creators from database
       const { pages } = await this.pagesService.searchPages(null, 0, 1000);
@@ -39,14 +81,20 @@ export class LiveStreamsService {
         .filter(p => p.xUsername)
         .map(p => p.xUsername);
 
+      // Extract creators with YouTube channel IDs
+      const youtubeChannelIds = pages
+        .filter(p => p.youtubeChannelId)
+        .map(p => p.youtubeChannelId);
+
       // Query APIs for live status
-      const [twitchStreams, xSpaces] = await Promise.all([
+      const [twitchStreams, xSpaces, youtubeStreams] = await Promise.all([
         twitchUsernames.length > 0 ? this.checkTwitchStreams(twitchUsernames) : Promise.resolve(new Map()),
         xUsernames.length > 0 ? this.checkXSpaces(xUsernames) : Promise.resolve(new Map()),
+        youtubeChannelIds.length > 0 ? this.checkYouTubeStreams(youtubeChannelIds) : Promise.resolve(new Map()),
       ]);
 
       // Combine results
-      return this.combineResults(pages, twitchStreams, xSpaces);
+      return this.combineResults(pages, twitchStreams, xSpaces, youtubeStreams);
     } catch (error) {
       this.logger.error('Error fetching live streams:', error);
       return [];
@@ -234,19 +282,101 @@ export class LiveStreamsService {
     }
   }
 
+  private async checkYouTubeStreams(channelIds: string[]): Promise<Map<string, YouTubeStream>> {
+    const cacheKey = `youtube_streams_${channelIds.sort().join(',')}_${Math.floor(Date.now() / 300000)}`;
+
+    // Check cache first (5 minute cache for YouTube)
+    const cached = await this.cacheManager.get<Map<string, YouTubeStream>>(cacheKey);
+    if (cached) {
+      return new Map(cached);
+    }
+
+    const apiKey = this.configService.get<string>('YOUTUBE_API_KEY');
+    if (!apiKey) {
+      this.logger.warn('YouTube API key not configured');
+      return new Map();
+    }
+
+    const streamsMap = new Map<string, YouTubeStream>();
+
+    try {
+      // YouTube API allows up to 50 channel IDs per request
+      const chunks = [];
+      for (let i = 0; i < channelIds.length; i += 50) {
+        chunks.push(channelIds.slice(i, i + 50));
+      }
+
+      for (const chunk of chunks) {
+        const response = await firstValueFrom(
+          this.httpService.get('https://www.googleapis.com/youtube/v3/search', {
+            params: {
+              part: 'snippet',
+              channelId: chunk.join(','),
+              type: 'video',
+              eventType: 'live',
+              maxResults: 50,
+              key: apiKey,
+            },
+          })
+        );
+
+        if (response.data?.items) {
+          for (const item of response.data.items) {
+            // Get live streaming details
+            const videoResponse = await firstValueFrom(
+              this.httpService.get('https://www.googleapis.com/youtube/v3/videos', {
+                params: {
+                  part: 'liveStreamingDetails,statistics',
+                  id: item.id.videoId,
+                  key: apiKey,
+                },
+              })
+            );
+
+            if (videoResponse.data?.items?.[0]) {
+              const video = videoResponse.data.items[0];
+              const stream: YouTubeStream = {
+                id: item.id.videoId,
+                channelId: item.snippet.channelId,
+                channelTitle: item.snippet.channelTitle,
+                title: item.snippet.title,
+                description: item.snippet.description,
+                thumbnails: item.snippet.thumbnails,
+                liveBroadcastContent: item.snippet.liveBroadcastContent,
+                actualStartTime: video.liveStreamingDetails?.actualStartTime,
+                concurrentViewers: video.liveStreamingDetails?.concurrentViewers || video.statistics?.viewCount,
+              };
+              streamsMap.set(item.snippet.channelId, stream);
+            }
+          }
+        }
+      }
+
+      await this.cacheManager.set(cacheKey, Array.from(streamsMap.entries()), 300000); // 5 minutes
+
+      return streamsMap;
+    } catch (error) {
+      this.logger.error('Failed to check YouTube streams:', error.response?.data || error.message);
+      return new Map();
+    }
+  }
+
   private combineResults(
     pages: Page[],
     twitchStreams: Map<string, TwitchStream>,
     xSpaces: Map<string, XSpace>,
-  ): LiveStreamDto[] {
-    const results: LiveStreamDto[] = [];
+    youtubeStreams: Map<string, YouTubeStream>,
+  ) {
+    const results = [];
 
     for (const page of pages) {
       const twitchUsername = (page.twitchUsername || page.twitchChannel || '').toLowerCase();
       const xUsername = (page.xUsername || '').toLowerCase();
+      const youtubeChannelId = page.youtubeChannelId || '';
 
       const twitchStream = twitchUsername ? twitchStreams.get(twitchUsername) : null;
       const xSpace = xUsername ? xSpaces.get(xUsername) : null;
+      const youtubeStream = youtubeChannelId ? youtubeStreams.get(youtubeChannelId) : null;
 
       if (twitchStream) {
         results.push({
@@ -278,7 +408,22 @@ export class LiveStreamsService {
           startedAt: xSpace.started_at ? new Date(xSpace.started_at) : null,
           tags: page.searchTerms?.split(',').map(t => t.trim()).filter(Boolean) || [],
         });
-      } else if (page.twitchUsername || page.twitchChannel || page.xUsername) {
+      } else if (youtubeStream) {
+        results.push({
+          id: page.id,
+          path: page.path,
+          name: page.name,
+          description: page.description,
+          logo: page.logo?.url || null,
+          platform: 'youtube',
+          isLive: true,
+          streamTitle: youtubeStream.title,
+          viewerCount: parseInt(youtubeStream.concurrentViewers || '0'),
+          streamUrl: `https://youtube.com/watch?v=${youtubeStream.id}`,
+          startedAt: youtubeStream.actualStartTime ? new Date(youtubeStream.actualStartTime) : null,
+          tags: page.searchTerms?.split(',').map(t => t.trim()).filter(Boolean) || [],
+        });
+      } else if (page.twitchUsername || page.twitchChannel || page.xUsername || page.youtubeChannelId) {
         // Featured creator (not live)
         results.push({
           id: page.id,
@@ -293,6 +438,8 @@ export class LiveStreamsService {
             ? `https://twitch.tv/${page.twitchUsername || page.twitchChannel}`
             : page.xUsername
             ? `https://twitter.com/${page.xUsername}`
+            : page.youtubeChannelId
+            ? `https://youtube.com/channel/${page.youtubeChannelId}`
             : null,
           tags: page.searchTerms?.split(',').map(t => t.trim()).filter(Boolean) || [],
         });

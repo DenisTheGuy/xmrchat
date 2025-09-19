@@ -15,9 +15,24 @@ export const useDate = () => {
     return dayjs(v).fromNow();
   };
 
+  const getStreamDuration = (startedAt: string | Date): string => {
+    const start = dayjs(startedAt);
+    const now = dayjs();
+    const diff = now.diff(start, 'second');
+
+    const hours = Math.floor(diff / 3600);
+    const minutes = Math.floor((diff % 3600) / 60);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  };
+
   return {
     formatTime,
     relativeDate,
+    getStreamDuration,
     dayjs,
   };
 };

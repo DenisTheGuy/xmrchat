@@ -241,3 +241,18 @@ export interface PageRecipient {
   percentage?: Numberic;
   variant?: PageRecipientVariant;
 }
+
+export interface LiveStream {
+  id: number;
+  path: string;
+  name: string;
+  description?: string;
+  logo?: string;
+  platform: 'twitch' | 'x' | 'youtube' | null;
+  isLive: boolean;
+  streamTitle?: string;
+  viewerCount?: number;
+  streamUrl?: string;
+  startedAt?: Date | string;
+  tags?: string[];
+}

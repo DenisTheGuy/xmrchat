@@ -13,6 +13,6 @@ export default new DataSource({
   username: process.env.DATABASE_USERNAME,
   password: process.env.DATABASE_PASSWORD,
   entities: ['**/*.entity.ts'],
-  migrations: ['migrations/*'],
+  migrations: ['src/migrations/*'],
   namingStrategy: new SnakeNamingStrategy(),
 });
