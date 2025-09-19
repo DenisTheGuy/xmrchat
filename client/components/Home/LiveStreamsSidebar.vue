@@ -40,13 +40,14 @@ const handleImageError = (event: Event) => {
   img.style.display = 'none';
 };
 
-onMounted(() => {
-  fetchStreams();
-  const interval = setInterval(fetchStreams, 120000);
+// Fetch immediately when component is created
+fetchStreams();
 
-  onUnmounted(() => {
-    clearInterval(interval);
-  });
+// Set up refresh interval
+const refreshInterval = setInterval(fetchStreams, 120000);
+
+onUnmounted(() => {
+  clearInterval(refreshInterval);
 });
 </script>
 
